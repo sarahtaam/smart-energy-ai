@@ -1,0 +1,15 @@
+// Copy this file to config.h and fill in your values. config.h is git-ignored.
+#pragma once
+
+#define WIFI_SSID "your-wifi"
+#define WIFI_PASSWORD "your-password"
+
+// IP of the PC / Raspberry Pi running Mosquitto (not "localhost": that is the ESP32 itself)
+#define MQTT_HOST "192.168.1.100"
+#define MQTT_PORT 1883
+#define MQTT_USER ""
+#define MQTT_PASSWORD ""
+
+#define TOPIC_PREFIX "smartenergy"
+#define DEVICE_ID "lab_a"            // unique per node: lab_a, office_b, ...
+#define PUBLISH_INTERVAL_MS 5000     // one reading every 5 s

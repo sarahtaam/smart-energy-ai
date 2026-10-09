@@ -1,0 +1,56 @@
+# Full stack in one command:   docker compose up --build
+# Dashboard: http://localhost:8501   API docs: http://localhost:8000/docs   MQTT: localhost:1883
+x-app: &app
+  build: .
+  image: smart-energy-ai
+  environment:
+    MQTT_HOST: mosquitto
+    API_URL: http://api:8000
+  volumes:
+    - ./data:/app/data
+    - ./models:/app/models
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports: ["1883:1883"]
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+
+  # One-shot: generate 60 days of history and train the models if none exist yet
+  init:
+    <<: *app
+    command: >
+      sh -c "test -f models/forecast.joblib ||
+             (python -m smart_energy.simulator backfill --days 60 && python -m smart_energy.ml.train)"
+
+  ingestor:
+    <<: *app
+    command: python -m smart_energy.ingestor
+    depends_on:
+      init: {condition: service_completed_successfully}
+      mosquitto: {condition: service_started}
+    restart: unless-stopped
+
+  api:
+    <<: *app
+    command: uvicorn smart_energy.api:app --host 0.0.0.0 --port 8000
+    ports: ["8000:8000"]
+    depends_on:
+      init: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  dashboard:
+    <<: *app
+    command: streamlit run dashboard/app.py --server.address 0.0.0.0 --server.port 8501
+    ports: ["8501:8501"]
+    depends_on: [api]
+    restart: unless-stopped
+
+  # Remove this service when real ESP32 nodes are publishing
+  simulator:
+    <<: *app
+    command: python -m smart_energy.simulator live --interval 5 --anomaly-prob 0.01
+    depends_on: [ingestor]
+    restart: unless-stopped

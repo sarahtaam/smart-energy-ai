@@ -1,0 +1,9 @@
+[project]
+name = "smart-energy-ai"
+version = "1.0.0"
+description = "IoT energy monitoring with ESP32, MQTT, anomaly detection and consumption forecasting"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
